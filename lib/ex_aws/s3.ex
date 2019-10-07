@@ -172,7 +172,7 @@ defmodule ExAws.S3 do
   def list_objects(bucket, opts \\ []) do
     params = opts
     |> format_and_take(@params)
-    
+
     request(:get, bucket, "/", [params: params, headers: opts[:headers]],
       stream_builder: &ExAws.S3.Lazy.stream_objects!(bucket, opts, &1),
       parser: &ExAws.S3.Parsers.parse_list_objects/1
@@ -975,6 +975,7 @@ defmodule ExAws.S3 do
     query_params = Keyword.get(opts, :query_params, [])
     virtual_host = Keyword.get(opts, :virtual_host, false)
     s3_accelerate = Keyword.get(opts, :s3_accelerate, false)
+    signed_headers = Keyword.get(opts, :signed_headers, [])
 
     {config, virtual_host} =
       if s3_accelerate,
@@ -986,7 +987,8 @@ defmodule ExAws.S3 do
       false ->
         url = url_to_sign(bucket, object, config, virtual_host)
         datetime = :calendar.universal_time
-        ExAws.Auth.presigned_url(http_method, url, :s3, datetime, config, expires_in, query_params)
+        body = nil
+        ExAws.Auth.presigned_url(http_method, url, :s3, datetime, config, expires_in, query_params, body, signed_headers)
     end
   end
 
